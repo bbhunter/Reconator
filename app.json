@@ -1,33 +1,33 @@
 {
-  "name" : "Reconator",
-  "description": "An Automated Recon Framework",
+  "name": "Reconator",
+  "description": "Automated reconnaissance framework — FastAPI + React + shadcn/ui",
   "repository": "https://github.com/gokulapap/Reconator",
   "logo": "https://i.imgur.com/OuplaeQ.png",
-  "keywords": ["python", "recon", "automation"],
-  "website": "https://t.me/+cpbGih_iO50wNDg1",
-  "success_url": "https://t.me/+cpbGih_iO50wNDg1",
-  "env": {
-        "API_KEY": {
-            "description": "Go to BotFather bot in telegram https://telegram.me/BotFather and create a bot to get the api key",
-            "required": true
-        },
-        "CHAT_ID": {
-            "description": "Go to chat_id_echo bot and get your chat id",
-            "required": true
-        }
+  "keywords": ["python", "fastapi", "react", "recon", "automation", "security"],
+  "stack": "container",
+  "formation": {
+    "web": { "quantity": 1, "size": "basic" },
+    "worker": { "quantity": 1, "size": "basic" }
   },
-  "buildpacks": [
-    {
-      "url": "heroku-community/apt"
-    },
-    {
-      "url": "heroku/python"
-    },
-    {
-      "url": "heroku/php"
-    }
+  "addons": [
+    { "plan": "heroku-postgresql:essential-0" }
   ],
-    "addons": [{
-      "plan": "heroku-postgresql"
-    }]
+  "env": {
+    "TELEGRAM_API_KEY": {
+      "description": "Telegram bot API key from @BotFather. Leave blank to disable notifications.",
+      "required": false
+    },
+    "TELEGRAM_CHAT_ID": {
+      "description": "Telegram chat id (use @chat_id_echo_bot). Leave blank to disable notifications.",
+      "required": false
+    },
+    "CORS_ORIGINS": {
+      "description": "Comma-separated origins. Use * for any.",
+      "value": "*"
+    },
+    "WORKER_POLL_INTERVAL_SECONDS": {
+      "description": "How often the worker polls for queued targets.",
+      "value": "30"
+    }
+  }
 }

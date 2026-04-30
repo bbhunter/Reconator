@@ -1,29 +1,70 @@
-version: '3'
-
 services:
   db:
-    image: postgres
+    image: postgres:16-alpine
     container_name: reconator-db
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: test_user
-      POSTGRES_PASSWORD: test_password
-      POSTGRES_DB: test_db
+      POSTGRES_USER: ${POSTGRES_USER:-reconator}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-reconator}
+      POSTGRES_DB: ${POSTGRES_DB:-reconator}
     volumes:
       - db-data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-reconator}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
-  app:
-    build: .
-    container_name: reconator-app
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: reconator-api
+    restart: unless-stopped
     environment:
-      CHAT_ID: <TELEGRAM_CHAT_ID>
-      API_KEY: <TELEGRAM_BOT_KEY>
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-reconator}:${POSTGRES_PASSWORD:-reconator}@db:5432/${POSTGRES_DB:-reconator}
+      TELEGRAM_API_KEY: ${TELEGRAM_API_KEY:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      CORS_ORIGINS: "*"
     ports:
-      - "5000:5000"
+      - "8000:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    volumes:
+      - results:/app/results
+
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: reconator-worker
+    restart: unless-stopped
+    command: ["python", "-m", "app.worker"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-reconator}:${POSTGRES_PASSWORD:-reconator}@db:5432/${POSTGRES_DB:-reconator}
+      TELEGRAM_API_KEY: ${TELEGRAM_API_KEY:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      WORKER_POLL_INTERVAL_SECONDS: "30"
+    depends_on:
+      db:
+        condition: service_healthy
+      api:
+        condition: service_started
+    volumes:
+      - results:/app/results
+
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: reconator-web
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
 
 volumes:
   db-data:
-
+  results:

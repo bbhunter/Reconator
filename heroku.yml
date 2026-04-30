@@ -1,0 +1,10 @@
+setup:
+  addons:
+    - plan: heroku-postgresql:essential-0
+build:
+  docker:
+    web: Dockerfile
+    worker: Dockerfile
+run:
+  web: gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 0.0.0.0:$PORT --workers 2 --timeout 120
+  worker: python -m app.worker

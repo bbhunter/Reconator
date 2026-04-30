@@ -1,130 +1,114 @@
-<!--
-Documentation for Reconator
--->
-
 <h1 align="center">
-  <br>
-  <a href="https://github.com/gokulapap/Reconator">
-  <img src="./static/reconator.png" alt="reconator">
-  </a>
+  <img src="./static/reconator.png" alt="Reconator" width="420">
   <br>
 </h1>
 
-
 <p align="center">
-  <a href="https://github.com/gokulapap/Reconator">
-    <img src="https://img.shields.io/badge/release-v1.0-green">
-  </a>
-   </a>
-  <a href="https://github.com/gokulapap/Reconator/blob/master/LICENSE">
-      <img src="https://img.shields.io/badge/license-GPL3-_red.svg">
-  </a>
-  <a href="https://twitter.com/CodingGokul">
-    <img src="https://img.shields.io/badge/twitter-%40CodingGokul-blue">
-  </a>
-    <a href="https://github.com/gokulapap/Reconator/issues?q=is%3Aissue+is%3Aclosed">
-    <img src="https://img.shields.io/github/issues-closed-raw/gokulapap/Reconator.svg">
-  </a>
-  <a href="https://github.com/gokulapap/Reconator/wiki">
-    <img src="https://img.shields.io/badge/doc-wiki-blue.svg">
-  </a>
-  <a href="https://t.me/+cpbGih_iO50wNDg1">
-    <img src="https://img.shields.io/badge/telegram-@Reconator-blue.svg">
-  </a>
+  <img src="https://img.shields.io/badge/release-v2.0-22d3ee">
+  <img src="https://img.shields.io/badge/api-FastAPI-009688">
+  <img src="https://img.shields.io/badge/web-React%20%2B%20shadcn-0ea5e9">
+  <img src="https://img.shields.io/badge/license-GPL3-red">
 </p>
 
-<h2 align="center">Summary</h2>
- 
+**Reconator** is an automated reconnaissance framework. Add a target, the worker
+runs ~17 recon modules against it (subdomain enum, dirbrute, JS/link mining, WAF
+fingerprint, takeover check, GF triage, and more), and the React dashboard shows
+per-module output as it lands.
 
-**Reconator** is a Framework for automating your process of reconnaisance without any Computing resource (Systemless Recon) at free of cost. Its Purely designed to host on Heroku which is a free cloud hosting provider. It performs the work of enumerations along with many vulnerability checks and obtains maximum information about the target domain.       
+## Stack
 
-It also performs various vulnerability checks like XSS, Open Redirects, SSRF, CRLF, LFI, SQLi and much more. Along with these, it performs OSINT, fuzzing, dorking, ports scanning, nuclei scan on your target.
+| Layer    | Tech                                                  |
+| -------- | ----------------------------------------------------- |
+| API      | FastAPI · SQLAlchemy 2 · Alembic · Pydantic v2        |
+| Worker   | Python subprocess runner with timeouts + retries      |
+| DB       | PostgreSQL 16                                         |
+| Web      | React 18 · TypeScript · Tailwind · **shadcn/ui**      |
+| Notify   | Telegram (optional)                                   |
+| Deploy   | Docker Compose · Heroku container stack               |
 
-Reconator receives all the targets needs to be reconed via a Web Interface and adds into the Queue and Notifies via Telebot on start and end of Recon on a target. So this is 100% automated and don't require any manual interaction
+## Quickstart — Docker Compose
 
-## :star: Star History
+```bash
+git clone https://github.com/gokulapap/Reconator
+cd Reconator
+cp .env.example .env       # optional: add Telegram keys
+docker compose up --build
+```
 
-[![Star History Chart](https://api.star-history.com/svg?repos=gokulapap/Reconator&type=Date)](https://star-history.com/#gokulapap/Reconator&Date)
+| Service   | URL                       |
+| --------- | ------------------------- |
+| Web UI    | http://localhost:3000     |
+| API docs  | http://localhost:8000/docs |
+| Postgres  | localhost:5432            |
 
-## ⚙️ Deploy
+The worker auto-picks queued targets every 30s.
 
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/gokulapap/reconator)
+## Quickstart — Heroku
 
-## 📋 Requirements
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/gokulapap/Reconator)
 
-- Heroku Free account (For Deploying)
-- Telegram account (For notifications)
+Or via CLI (uses `heroku.yml` container stack — single image serves UI + API,
+worker dyno runs the queue):
 
-## 📹 Demo Video of Deploying
+```bash
+heroku create my-reconator --stack=container
+heroku addons:create heroku-postgresql:essential-0
+heroku config:set TELEGRAM_API_KEY=... TELEGRAM_CHAT_ID=...   # optional
+git push heroku master
+heroku ps:scale web=1 worker=1
+```
 
-[![Reconator Demo](https://img.youtube.com/vi/j6Cw_tZ7ri0/0.jpg)](https://youtu.be/j6Cw_tZ7ri0)
+## Local development
 
-## 📹 Trailer Video 
+```bash
+# api
+cd backend && pip install -r requirements.txt
+uvicorn app.main:app --reload
 
-[![Reconator Trailer](https://img.youtube.com/vi/ldWuJiDfotA/0.jpg)](https://www.youtube.com/watch?v=ldWuJiDfotA)
+# worker
+python -m app.worker
 
+# web
+cd frontend && npm install && npm run dev   # proxies /api → :8000
+```
 
-## 📕 Usage
+## API surface
 
-**WEB APPLICATION PATHS**
- 
-| path | Description |
-|------|-------------|
-| (/) home | Root page where you will add targets  |
-| /initialise | Initialise the Database and the cronjob |
-| /queue | The targets added will be in the queue can manage targets |
-| /scanned | It contains list of all scanned targets can view results by results |
-| /issues | It has a quick link for reporting a issue and tool improvement |
- 
-## :fire: Features :fire:
- 
-- Systemless Recon 100% Free
-- Fast scan and Easy to use
-- Permanent storage of Results in DB
-- Notification support via Telegram bot
-- Fully Automated Scanner
-- Easy access via Web UI
-- Queue support allows to add many targets
-- Easy Deploy Easy Recon
-- Runs 24/7 for 22 Days [Heroku - 550 hrs/month free]
-  
+| Method | Path                                          | Purpose                |
+| ------ | --------------------------------------------- | ---------------------- |
+| POST   | `/api/v1/targets`                             | Queue a domain         |
+| GET    | `/api/v1/targets`                             | List + filter + paginate |
+| GET    | `/api/v1/targets/stats`                       | Counts by status       |
+| GET    | `/api/v1/targets/{id}`                        | Target + module summary |
+| DELETE | `/api/v1/targets/{id}`                        | Cancel / delete        |
+| GET    | `/api/v1/targets/{id}/results`                | All module outputs     |
+| GET    | `/api/v1/targets/{id}/results/{module}`       | One module's output    |
+| GET    | `/api/v1/targets/{id}/results/{module}/download` | Download as `.txt`  |
+| GET    | `/api/v1/modules`                             | Available modules      |
+| GET    | `/api/v1/health` · `/api/v1/ready`            | Probes                 |
 
-<h3> 📝 More Features and More Recon tools will be added in next update </h3>
-  
-<hr> 
+Full OpenAPI spec at `/docs`.
 
-## 💬 Community & Discussion
+## Configuration
 
-Join Our Telegram server [here](https://t.me/+cpbGih_iO50wNDg1)
-  
-## :information_source: How to contribute:
- 
-If you want to contribute to this project then:
-- Submitting an [issue](https://github.com/gokulapap/Reconator/issues/new/choose) because you have found a bug or you have any suggestion or request.
-- Submitting a feature request in this Form [form](https://forms.gle/VaZ9e4QTBxhjk2At7)
- 
-## :information_source: Need help?
- 
-- Take a look at the [wiki](https://github.com/gokulapap/Reconator/wiki) section.  
-- Check [FAQ](https://github.com/gokulapap/Reconator/wiki/FAQ) for commonly asked questions.  
-- Ask for help in the [Telegram group](https://t.me/+cpbGih_iO50wNDg1)
+| Env var                          | Default     | Notes                          |
+| -------------------------------- | ----------- | ------------------------------ |
+| `DATABASE_URL`                   | _composed_  | `postgresql://…` (Heroku-style ok) |
+| `TELEGRAM_API_KEY`               | unset       | Disables notifications if blank |
+| `TELEGRAM_CHAT_ID`               | unset       |                                |
+| `WORKER_POLL_INTERVAL_SECONDS`   | `30`        |                                |
+| `MODULE_TIMEOUT_SECONDS`         | `1800`      | Per-module hard timeout        |
+| `CORS_ORIGINS`                   | `*`         | Comma-separated                |
 
-## 🤝 Helping hands 🤝
+## What changed from v1
 
- - <a href="https://github.com/jopraveen">Jopraveen</a> (Video Editing & FrontEnd)
- - <a href="https://github.com/santhasarooban">Santroo</a> (FrontEnd design)
- - <a href="https://github.com/0xGodson">Godson</a> (Script Searching)
- - <a href="https://github.com/venom33cm">Yashwant</a> (FrontEnd design)
+- Flask → FastAPI; SQL injection vectors removed (parameterized via SQLAlchemy)
+- Embedded HTML in Python → React + shadcn/ui dashboard
+- Single base64 blob in DB → per-module rows with status/timestamps/errors
+- `cron.py` polling loop → proper worker process with graceful shutdown + row locking
+- Manual Heroku buildpacks → container stack via `heroku.yml`
 
-## You can support this work buying me a coffee:
- 
-[<img src="https://cdn.buymeacoffee.com/buttons/v2/default-orange.png">](https://www.buymeacoffee.com/gokulap)
-  
-## ⚠️ Disclaimer
-Usage of this program for attacking targets without consent is illegal. It is the user's responsibility to obey all applicable laws. The developer assumes no liability and is not responsible for any misuse or damage caused by this program. Please use responsibly.
+## Disclaimer
 
-The material contained in this repository is licensed under GNU GPLv3.
-
-## 🧾 License
-
-`Reconator` is made with ♥ by [@gokulap](https://twitter.com/CodingGokul) and it is released under the GPL 3.0 License 
+For authorized testing only. Use on systems you own or have permission to assess.
+Released under GPL-3.0.

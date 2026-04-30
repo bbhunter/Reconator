@@ -1,0 +1,14 @@
+**/__pycache__
+**/.venv
+**/node_modules
+**/dist
+**/.pytest_cache
+**/.mypy_cache
+.git
+.env
+.env.*
+!.env.example
+results/
+*.md
+!README.md
+LICENSE
