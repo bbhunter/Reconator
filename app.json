@@ -13,12 +13,29 @@
     { "plan": "heroku-postgresql:essential-0" }
   ],
   "env": {
+    "ADMIN_API_KEY": {
+      "description": "When set, mutations require X-API-Key header. Strongly recommended in prod. Generate with: openssl rand -hex 32",
+      "generator": "secret",
+      "required": false
+    },
     "TELEGRAM_API_KEY": {
       "description": "Telegram bot API key from @BotFather. Leave blank to disable notifications.",
       "required": false
     },
     "TELEGRAM_CHAT_ID": {
       "description": "Telegram chat id (use @chat_id_echo_bot). Leave blank to disable notifications.",
+      "required": false
+    },
+    "WEBHOOK_URL": {
+      "description": "Optional Slack/Discord/generic webhook for scan notifications.",
+      "required": false
+    },
+    "WEBHOOK_KIND": {
+      "description": "generic | slack | discord",
+      "value": "generic"
+    },
+    "SENTRY_DSN": {
+      "description": "Optional Sentry DSN for error tracking.",
       "required": false
     },
     "CORS_ORIGINS": {

@@ -2,7 +2,16 @@ import enum
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import (
+    JSON,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
@@ -43,6 +52,11 @@ class Target(Base, TimestampMixin):
     )
     error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # New: tags + selected modules. JSON for cross-dialect support (sqlite tests).
+    tags: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    selected_modules: Mapped[Optional[list[str]]] = mapped_column(JSON, nullable=True)
+    cancel_requested: Mapped[bool] = mapped_column(default=False, nullable=False)
 
     results: Mapped[list["ScanResult"]] = relationship(
         "ScanResult",

@@ -1,7 +1,9 @@
 from fastapi import APIRouter
 from sqlalchemy import text
 
-from app.db.session import engine
+from app.core.metrics import metrics_response, queue_depth
+from app.db.models import Target, TargetStatus
+from app.db.session import SessionLocal, engine
 
 router = APIRouter(tags=["health"])
 
@@ -19,3 +21,16 @@ def ready() -> dict[str, str]:
         return {"status": "ready"}
     except Exception as exc:  # noqa: BLE001
         return {"status": "degraded", "error": str(exc)}
+
+
+@router.get("/metrics", include_in_schema=False)
+def metrics():
+    try:
+        with SessionLocal() as db:
+            depth = (
+                db.query(Target).filter(Target.status == TargetStatus.queued).count()
+            )
+            queue_depth.set(depth)
+    except Exception:  # noqa: BLE001
+        pass
+    return metrics_response()

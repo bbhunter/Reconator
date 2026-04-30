@@ -1,20 +1,35 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, ListChecks, Radar, Github } from "lucide-react";
+import {
+  Github,
+  LayoutDashboard,
+  ListChecks,
+  Moon,
+  Radar,
+  Settings as SettingsIcon,
+  Sun,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "@/components/ThemeProvider";
 
 const nav = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/targets", label: "Targets", icon: ListChecks },
   { to: "/modules", label: "Modules", icon: Radar },
+  { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
 export function Layout() {
+  const { theme, toggle } = useTheme();
   return (
     <div className="min-h-screen flex flex-col">
       <header className="border-b border-border bg-card/40 backdrop-blur sticky top-0 z-40">
         <div className="container flex h-14 items-center gap-6">
-          <Link to="/" className="flex items-center gap-2 font-semibold tracking-tight">
+          <Link
+            to="/"
+            className="flex items-center gap-2 font-semibold tracking-tight"
+          >
             <Radar className="h-5 w-5 text-primary" />
             <span>Reconator</span>
             <span className="text-xs text-muted-foreground font-normal">v2</span>
@@ -39,12 +54,20 @@ export function Layout() {
               </NavLink>
             ))}
           </nav>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-1">
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={toggle}
+              aria-label="Toggle theme"
+            >
+              {theme === "dark" ? <Sun /> : <Moon />}
+            </Button>
             <a
               href="https://github.com/gokulapap/Reconator"
               target="_blank"
               rel="noreferrer"
-              className="text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground p-2"
               aria-label="GitHub"
             >
               <Github className="h-5 w-5" />

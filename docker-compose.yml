@@ -23,8 +23,14 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-reconator}:${POSTGRES_PASSWORD:-reconator}@db:5432/${POSTGRES_DB:-reconator}
+      ADMIN_API_KEY: ${ADMIN_API_KEY:-}
       TELEGRAM_API_KEY: ${TELEGRAM_API_KEY:-}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      WEBHOOK_URL: ${WEBHOOK_URL:-}
+      WEBHOOK_KIND: ${WEBHOOK_KIND:-generic}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      RATE_LIMIT_WRITES: ${RATE_LIMIT_WRITES:-20/minute}
+      RATE_LIMIT_BULK: ${RATE_LIMIT_BULK:-5/minute}
       CORS_ORIGINS: "*"
     ports:
       - "8000:8000"
@@ -45,6 +51,9 @@ services:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-reconator}:${POSTGRES_PASSWORD:-reconator}@db:5432/${POSTGRES_DB:-reconator}
       TELEGRAM_API_KEY: ${TELEGRAM_API_KEY:-}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      WEBHOOK_URL: ${WEBHOOK_URL:-}
+      WEBHOOK_KIND: ${WEBHOOK_KIND:-generic}
+      SENTRY_DSN: ${SENTRY_DSN:-}
       WORKER_POLL_INTERVAL_SECONDS: "30"
     depends_on:
       db:

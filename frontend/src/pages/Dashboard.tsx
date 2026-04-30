@@ -6,13 +6,23 @@ import {
   CircleAlert,
   Clock,
   ListChecks,
+  Timer,
+  XCircle,
 } from "lucide-react";
 
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { formatRelative } from "@/lib/utils";
+
+function fmtDuration(s: number | null | undefined) {
+  if (!s) return "—";
+  if (s < 60) return `${Math.round(s)}s`;
+  if (s < 3600) return `${Math.round(s / 60)}m`;
+  return `${(s / 3600).toFixed(1)}h`;
+}
 
 export function Dashboard() {
   const stats = useQuery({
@@ -22,7 +32,7 @@ export function Dashboard() {
   });
   const recent = useQuery({
     queryKey: ["recent-targets"],
-    queryFn: () => api.listTargets({ page: 1, page_size: 6 }),
+    queryFn: () => api.listTargets({ page: 1, page_size: 8 }),
     refetchInterval: 5000,
   });
 
@@ -31,6 +41,13 @@ export function Dashboard() {
     { label: "Running", value: stats.data?.running ?? 0, icon: Activity, color: "text-amber-400" },
     { label: "Completed", value: stats.data?.completed ?? 0, icon: CheckCircle2, color: "text-emerald-400" },
     { label: "Failed", value: stats.data?.failed ?? 0, icon: CircleAlert, color: "text-rose-400" },
+    { label: "Cancelled", value: stats.data?.cancelled ?? 0, icon: XCircle, color: "text-slate-400" },
+    {
+      label: "Avg duration",
+      value: fmtDuration(stats.data?.avg_duration_seconds),
+      icon: Timer,
+      color: "text-violet-400",
+    },
   ];
 
   return (
@@ -49,7 +66,7 @@ export function Dashboard() {
         </Button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {cards.map((c) => (
           <Card key={c.label}>
             <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
@@ -59,7 +76,7 @@ export function Dashboard() {
               <c.icon className={`h-4 w-4 ${c.color}`} />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-semibold">{c.value}</div>
+              <div className="text-2xl font-semibold">{c.value}</div>
             </CardContent>
           </Card>
         ))}
@@ -73,14 +90,25 @@ export function Dashboard() {
           {recent.data?.items.length ? (
             <ul className="divide-y divide-border">
               {recent.data.items.map((t) => (
-                <li key={t.id} className="py-3 flex items-center justify-between">
-                  <Link
-                    to={`/targets/${t.id}`}
-                    className="font-mono text-sm hover:text-primary"
-                  >
-                    {t.url}
-                  </Link>
-                  <div className="flex items-center gap-3">
+                <li key={t.id} className="py-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      to={`/targets/${t.id}`}
+                      className="font-mono text-sm hover:text-primary truncate inline-block max-w-full align-middle"
+                    >
+                      {t.url}
+                    </Link>
+                    {(t.tags || []).length > 0 && (
+                      <span className="ml-2 inline-flex gap-1 align-middle">
+                        {t.tags.map((tg) => (
+                          <Badge key={tg} variant="outline" className="text-[10px]">
+                            {tg}
+                          </Badge>
+                        ))}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
                     <span className="text-xs text-muted-foreground">
                       {formatRelative(t.created_at)}
                     </span>

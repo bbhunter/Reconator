@@ -1,11 +1,38 @@
 const BASE = import.meta.env.VITE_API_URL || "";
 const PREFIX = "/api/v1";
 
+const API_KEY_STORAGE = "reconator.apiKey";
+
+export const apiKeyStore = {
+  get(): string | null {
+    try {
+      return localStorage.getItem(API_KEY_STORAGE);
+    } catch {
+      return null;
+    }
+  },
+  set(value: string) {
+    try {
+      if (value) localStorage.setItem(API_KEY_STORAGE, value);
+      else localStorage.removeItem(API_KEY_STORAGE);
+    } catch {}
+  },
+  clear() {
+    try {
+      localStorage.removeItem(API_KEY_STORAGE);
+    } catch {}
+  },
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${PREFIX}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...init,
-  });
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...((init?.headers as Record<string, string>) ?? {}),
+  };
+  const key = apiKeyStore.get();
+  if (key) headers["X-API-Key"] = key;
+
+  const res = await fetch(`${BASE}${PREFIX}${path}`, { ...init, headers });
   if (!res.ok) {
     let detail = `HTTP ${res.status}`;
     try {
@@ -37,6 +64,8 @@ export interface Target {
   url: string;
   status: TargetStatus;
   error: string | null;
+  tags: string[];
+  selected_modules: string[] | null;
   created_at: string;
   started_at: string | null;
   completed_at: string | null;
@@ -57,6 +86,7 @@ export interface ScanResult extends ScanResultSummary {
 }
 
 export interface TargetDetail extends Target {
+  notes: string | null;
   results: ScanResultSummary[];
 }
 
@@ -72,7 +102,9 @@ export interface Stats {
   running: number;
   completed: number;
   failed: number;
+  cancelled: number;
   total: number;
+  avg_duration_seconds: number | null;
 }
 
 export interface ModuleInfo {
@@ -81,28 +113,64 @@ export interface ModuleInfo {
   timeout: number;
 }
 
+export interface BulkResult {
+  created: number[];
+  conflicts: string[];
+  errors: Record<string, string>;
+}
+
+export interface SystemInfo {
+  name: string;
+  version: string;
+  env: string;
+  auth_required: boolean;
+  notifications: { telegram: boolean; webhook: boolean };
+}
+
 export const api = {
-  listTargets: (params: {
-    status?: TargetStatus;
-    search?: string;
-    page?: number;
-    page_size?: number;
-  } = {}) => {
+  listTargets: (
+    params: {
+      status?: TargetStatus;
+      search?: string;
+      tag?: string;
+      page?: number;
+      page_size?: number;
+    } = {},
+  ) => {
     const qs = new URLSearchParams();
     if (params.status) qs.set("status", params.status);
     if (params.search) qs.set("search", params.search);
+    if (params.tag) qs.set("tag", params.tag);
     qs.set("page", String(params.page ?? 1));
     qs.set("page_size", String(params.page_size ?? 25));
     return request<TargetList>(`/targets?${qs.toString()}`);
   },
   getTarget: (id: number) => request<TargetDetail>(`/targets/${id}`),
-  createTarget: (url: string) =>
+  createTarget: (payload: {
+    url: string;
+    tags?: string[];
+    selected_modules?: string[] | null;
+    notes?: string | null;
+  }) =>
     request<Target>("/targets", {
       method: "POST",
-      body: JSON.stringify({ url }),
+      body: JSON.stringify(payload),
+    }),
+  bulkCreate: (payload: {
+    urls: string[];
+    tags?: string[];
+    selected_modules?: string[] | null;
+  }) =>
+    request<BulkResult>("/targets/bulk", {
+      method: "POST",
+      body: JSON.stringify(payload),
     }),
   deleteTarget: (id: number) =>
     request<void>(`/targets/${id}`, { method: "DELETE" }),
+  cancelTarget: (id: number) =>
+    request<Target>(`/targets/${id}/cancel`, { method: "POST" }),
+  rescanTarget: (id: number) =>
+    request<Target>(`/targets/${id}/rescan`, { method: "POST" }),
   stats: () => request<Stats>("/targets/stats"),
   listResults: (targetId: number) =>
     request<ScanResult[]>(`/targets/${targetId}/results`),
@@ -110,5 +178,15 @@ export const api = {
     request<ScanResult>(`/targets/${targetId}/results/${module}`),
   downloadResult: (targetId: number, module: string) =>
     `${BASE}${PREFIX}/targets/${targetId}/results/${module}/download`,
+  exportTargets: (format: "csv" | "json", status?: TargetStatus) => {
+    const qs = new URLSearchParams({ format });
+    if (status) qs.set("status", status);
+    return `${BASE}${PREFIX}/targets/export?${qs.toString()}`;
+  },
   modules: () => request<ModuleInfo[]>("/modules"),
+  systemInfo: () => request<SystemInfo>("/system/info"),
+  testNotify: () =>
+    request<{ sent: boolean; enabled: boolean }>("/system/test-notify", {
+      method: "POST",
+    }),
 };
